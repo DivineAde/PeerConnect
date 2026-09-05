@@ -1,0 +1,27 @@
+{
+  "name": "peer-connect-abbey-fullstack-challenge",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter ./apps/* dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm --filter @peerconnect/database build && pnpm --filter @peerconnect/validation build && pnpm --filter @peerconnect/types build && pnpm --filter api build && pnpm --filter web build",
+    "start": "pnpm --filter api start & pnpm --filter web start",
+    "lint": "pnpm --recursive --filter ./apps/* lint",
+    "typecheck": "pnpm --recursive --filter ./apps/* --filter ./packages/* typecheck",
+    "test": "pnpm --filter api test",
+    "db:migrate": "pnpm --filter @peerconnect/database db:migrate",
+    "db:seed": "pnpm --filter @peerconnect/database db:seed",
+    "db:studio": "pnpm --filter @peerconnect/database db:studio"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "prisma": "^5.22.0",
+    "typescript": "^5.5.4"
+  },
+  "packageManager": "pnpm@9.7.0",
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  }
+}

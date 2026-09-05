@@ -1,0 +1,105 @@
+// PeerConnect — Prisma schema
+//
+// Architectural note on Connection (see README "Architectural decisions"
+// for the full write-up): a connection between two users is stored as a
+// single row with a deterministic (requesterId, receiverId) pair at
+// creation time, plus a unique constraint on the *unordered* pair via
+// `userLowId`/`userHighId`. This prevents both accidental duplicate
+// requests (A -> B twice) and mirrored duplicates (A -> B and B -> A
+// both existing at once), while still letting us know who initiated
+// the request (for correct "pending incoming" vs "pending outgoing" UI).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum AuthProvider {
+  PASSWORD
+  GOOGLE
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String?
+  provider     AuthProvider @default(PASSWORD)
+  googleId     String?      @unique
+
+  name      String
+  headline  String? // short professional description, e.g. "Product Designer at Abbey"
+  bio       String?
+  location  String?
+  avatarUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refreshTokens        RefreshToken[]
+  sentConnections      Connection[]   @relation("SentConnections")
+  receivedConnections  Connection[]   @relation("ReceivedConnections")
+
+  @@index([email])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // We store a hash of the token, never the raw value, so a leaked DB
+  // does not itself allow session hijacking.
+  tokenHash String   @unique
+
+  // Refresh token rotation: each refresh issues a new token and marks
+  // the old one as replaced, so a stolen-then-reused token can be
+  // detected (reuse of a replaced token revokes the whole family).
+  familyId    String
+  replacedBy  String?
+  revokedAt   DateTime?
+
+  userAgent String?
+  ipAddress String?
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+model Connection {
+  id String @id @default(cuid())
+
+  requesterId String
+  requester   User   @relation("SentConnections", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  receiverId String
+  receiver   User   @relation("ReceivedConnections", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  status ConnectionStatus @default(PENDING)
+
+  // Normalized unordered pair (userLowId < userHighId lexicographically)
+  // used purely to enforce "at most one relationship row per pair of
+  // users", regardless of who requested or the current status.
+  userLowId  String
+  userHighId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userLowId, userHighId])
+  @@index([requesterId])
+  @@index([receiverId])
+  @@index([status])
+}
