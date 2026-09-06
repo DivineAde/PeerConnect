@@ -14,12 +14,12 @@
     "db:studio": "prisma studio --schema ../../prisma/schema.prisma"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0"
+    "@prisma/client": "5.19.1"
   },
   "devDependencies": {
     "@types/node": "^20.14.15",
-    "prisma": "^5.22.0",
+    "prisma": "5.19.1",
     "tsx": "^4.19.0",
-    "typescript": "^5.5.4"
+    "typescript": "5.5.4"
   }
 }
